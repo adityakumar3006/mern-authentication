@@ -1,11 +1,16 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
+import { signInStart, signInFailure, signInSuccess } from '../redux/user/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import OAuth from '../components/OAuth';
 export default function Signin() {
     const [formData, setFormData] = useState({});
-    const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(false);
+    // const [error, setError] = useState(false);
+    // const [loading, setLoading] = useState(false);
+    const { loading, error } = useSelector((state) => state.user)
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.id]: e.target.value })
 
@@ -13,7 +18,8 @@ export default function Signin() {
     const handleSubmit = async (e) => {
         e.preventDefault();// dont refreh the page
         try {
-            setLoading(true);
+            // setLoading(true);
+            dispatch(signInStart())
             const res = await fetch("/api/auth/signin", {
                 method: 'POST',
                 headers: {
@@ -22,16 +28,18 @@ export default function Signin() {
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
-            setLoading(false);
             if (data.success === false) {
-                setError(true)
-                return
+                dispatch(signInFailure(data))
+                return;
             }
+            dispatch(signInSuccess(data))
+
             navigate("/")
 
         } catch (error) {
-            setLoading(false);
-            setError(true)
+            // setLoading(false);
+            // setError(true)
+            dispatch(signInFailure(error))
 
         }
 
@@ -47,6 +55,7 @@ export default function Signin() {
                 <button disabled={loading} className='bg-slate-600 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>
                     {loading ? "Loading......" : 'Sign In'}
                 </button>
+                <OAuth />
             </form>
             <div className='flex gap-2 mt-5'>
                 <p>Dont have an account? </p>
@@ -54,7 +63,8 @@ export default function Signin() {
                     <span className='text-blue-500'>Sign Up</span>
                 </Link>
             </div>
-            <p className='text-red-700 mt-5'>{error && 'Something went wrong'}</p>
+            <p className='text-red-700 mt-5'>
+                {error ? error.message || 'Something went wrong' : ""}</p>
 
         </div >
     )
